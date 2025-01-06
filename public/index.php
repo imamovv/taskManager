@@ -1,14 +1,17 @@
 <?php
-require '../app/config.php';
-require_once(__DIR__ . '/../app/Router.php');
-require_once(__DIR__ . '/../app/controllers/UserController.php');
 
-$router = new Router();
+use Illuminate\Http\Request;
 
-$router->add('/', 'UserController@index');
-$router->add('/create', 'UserController@create');
-$router->add('/user/@id', 'UserController@show');
-$router->add('/edit/@id', 'UserController@edit');
-$router->add('/delete/@id', 'UserController@delete');
+define('LARAVEL_START', microtime(true));
 
-$router->dispatch();
+// Determine if the application is in maintenance mode...
+if (file_exists($maintenance = __DIR__.'/../storage/framework/maintenance.php')) {
+    require $maintenance;
+}
+
+// Register the Composer autoloader...
+require __DIR__.'/../vendor/autoload.php';
+
+// Bootstrap Laravel and handle the request...
+(require_once __DIR__.'/../bootstrap/app.php')
+    ->handleRequest(Request::capture());

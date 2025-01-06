@@ -1,48 +1,48 @@
 <?php
 
-namespace app\models;
+namespace App\Models;
 
-use app\Database;
+// use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\Notifiable;
 
-class User
+class User extends Authenticatable
 {
-    private $pdo;
+    /** @use HasFactory<\Database\Factories\UserFactory> */
+    use HasFactory, Notifiable;
 
-    public function __construct()
-    {
-        $database = new Database();
-        $this->pdo = $database->getConnection();
-    }
+    /**
+     * The attributes that are mass assignable.
+     *
+     * @var list<string>
+     */
+    protected $fillable = [
+        'name',
+        'email',
+        'password',
+    ];
 
-    public function all()
-    {
-        $stmt = $this->pdo->query('SELECT * FROM users');
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
-    }
+    /**
+     * The attributes that should be hidden for serialization.
+     *
+     * @var list<string>
+     */
+    protected $hidden = [
+        'password',
+        'remember_token',
+    ];
 
-    public function find($id)
+    /**
+     * Get the attributes that should be cast.
+     *
+     * @return array<string, string>
+     */
+    protected function casts(): array
     {
-        $stmt = $this->pdo->prepare('SELECT * FROM users WHERE id = ?');
-        $stmt->execute([$id]);
-        return $stmt->fetch(PDO::FETCH_ASSOC);
-    }
-
-    public function create($data)
-    {
-        $stmt = $this->pdo->prepare('INSERT INTO users (name, email) VALUES (?, ?)');
-        $stmt->execute([$data['name'], $data['email']]);
-        return $this->pdo->lastInsertId();
-    }
-
-    public function update($id, $data)
-    {
-        $stmt = $this->pdo->prepare('UPDATE users SET name = ?, email = ? WHERE id = ?');
-        return $stmt->execute([$data['name'], $data['email'], $id]);
-    }
-
-    public function delete($id)
-    {
-        $stmt = $this->pdo->prepare('DELETE FROM users WHERE id = ?');
-        return $stmt->execute([$id]);
+        return [
+            'email_verified_at' => 'datetime',
+            'password' => 'hashed',
+        ];
     }
 }
