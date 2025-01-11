@@ -4,70 +4,80 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Post;
-use Symfony\Component\HttpFoundation\Response;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class PostController extends Controller
 {
     public function index()
     {
         $posts = Post::all();
-        return response()->json($posts, Response::HTTP_OK);
+        return response()->json($posts);
     }
 
     public function store(Request $request)
     {
         $request->validate([
             'title' => 'required|string|max:255',
-            'content' => 'required|string'
+            'content' => 'required|string',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
         ]);
 
-        $post = new Post([
-            'user_id' => auth()->id(),
-            'title' => $request->input('title'),
-            'content' => $request->input('content')
-        ]);
+        $post = new Post();
+        $post->title = $request->input('title');
+        $post->content = $request->input('content');
+
+        if ($request->hasFile('image')) {
+            $imagePath = $request->file('image')->store('images', 'public');
+            $post->image = $imagePath;
+        }
 
         $post->save();
 
-        return response()->json($post, Response::HTTP_CREATED);
+        return response()->json($post, 201);
     }
 
     public function show(Post $post)
     {
-        if ($post->user_id !== auth()->id()) {
-            return response()->json(['message' => 'Forbidden'], Response::HTTP_FORBIDDEN);
-        }
-
-        return response()->json($post, Response::HTTP_OK);
+        return response()->json($post);
     }
 
     public function update(Request $request, Post $post)
     {
-        if ($post->user_id !== auth()->id()) {
-            return response()->json(['message' => 'Forbidden'], Response::HTTP_FORBIDDEN);
-        }
-
         $request->validate([
             'title' => 'required|string|max:255',
-            'content' => 'required|string'
+            'content' => 'required|string',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
         ]);
 
-        $post->update([
-            'title' => $request->input('title'),
-            'content' => $request->input('content')
-        ]);
+        $post->title = $request->input('title');
+        $post->content = $request->input('content');
 
-        return response()->json($post, Response::HTTP_OK);
+        if ($request->hasFile('image')) {
+            // Удаляем старое изображение
+            if ($post->image) {
+                Storage::disk('public')->delete($post->image);
+            }
+
+            // Загружаем новое изображение
+            $imagePath = $request->file('image')->store('images', 'public');
+            $post->image = $imagePath;
+        }
+
+        $post->save();
+
+        return response()->json($post);
     }
 
     public function destroy(Post $post)
     {
-        if ($post->user_id !== auth()->id()) {
-            return response()->json(['message' => 'Forbidden'], Response::HTTP_FORBIDDEN);
+        // Удаляем изображение
+        if ($post->image) {
+            Storage::disk('public')->delete($post->image);
         }
 
         $post->delete();
 
-        return response()->json(null, Response::HTTP_NO_CONTENT);
+        return response()->json(null, 204);
     }
 }
